@@ -1,5 +1,5 @@
 ---
-title: "MAKE START DATA MS - R Notebook"
+title: "MAKE START DATA for MS - R Notebook"
 output: html_notebook
 ---
 
@@ -20,60 +20,14 @@ library(oce)
 ```{r}
 #NB 2022-10-19 latest (all sample/Oslo) species cleaning applied so smaller spp dataset
 
-env_orig <- read.csv(file.path(dataPath,"inputs/envDataOslo_2022-10-19.csv")) %>% as.data.frame
-otu_orig <- read.csv(file.path(dataPath,"inputs/widedataOslo_2022-10-19.csv")) %>% as.data.frame
+env_orig <- read.csv(file.path(dataPath,"inputsMS/env_MS_2023-08-04.csv")) %>% as.data.frame
+otu_orig <- read.csv(file.path(dataPath,"inputsMS/otu_MS_2023-08-04.csv")) %>% as.data.frame
 
 #left join and split to ensure ordered identically
-JoinedDat<- left_join(otu_orig,env_orig, by=c("SampID"="SampID2"))
+JoinedDat<- left_join(otu_orig,env_orig)
+plot(JoinedDat$X, JoinedDat$Y)
 
 ```
-
-
-## REMOVE ALL STATIONS SHALLOWER THAN 100m 
-
-```{r}
-
-plot(JoinedDat$X.y, JoinedDat$Y)
-
-# RETAIN ONLY SAMPLES BELOW 100m depth
-JoinedDat$bathyPositive<-(JoinedDat$bathy*-1)
-AfotJoinedDat <-subset(JoinedDat, bathyPositive>100)
-AfotJoinedDat<-AfotJoinedDat%>%select(-c("bathyPositive"))
-
-#check plot (compare to before)
-plot(AfotJoinedDat$X.y, AfotJoinedDat$Y)
-
-```
-
-
-## REMOVE TROMSØFLAKET DATA (i.e. data from cruise 2006612)
-
-```{r}
-# remove 2006 data
-T2006_filt<-filter(AfotJoinedDat, !str_detect(cruise_no,'2006612'))
-T2006_check<-filter(T2006_filt, (str_detect(cruise_no,'2006612')))
-```
-
-## GENERATE MAIN DATASETS
-
-```{r}
-Afot_otu_sort<-T2006_filt %>% select(c(2:which(colnames(T2006_filt)=="Weberella_bursa")))#dataset 19-10-22 or after
-Afot_env_sort<-T2006_filt %>% select(c(2,(which(colnames(T2006_filt)=="Weberella_bursa")+1):which(colnames(T2006_filt)=="sand")))  #dataset 19-10-22 or after
-# LDensNoSB_otu_sort<-loDensNoSBJoinedDat %>% select(c(2:391))#dataset before 19-10-22
-# LDensNoSB_env_sort<-loDensNoSBJoinedDat %>% select(c(2,397:532))  #dataset before 19-10-22
-```
-
-
-##### SAVE DATASETS
-```{r}
-# SHALLOW BELOW 100m dataset without Tromsøflaket = START DATASET
-write.csv(Afot_otu_sort, file=file.path(dataPath,(paste0("inputsMS/Afot_otu_sort_", Sys.Date(),".csv"))))
-write.csv(Afot_env_sort, file=file.path(dataPath,(paste0("inputsMS/Afot_env_sort_", Sys.Date(),".csv"))))
-```
-
-
-
-
 
 ## GENERATE 1 per VL DATASET
 
@@ -81,10 +35,10 @@ write.csv(Afot_env_sort, file=file.path(dataPath,(paste0("inputsMS/Afot_env_sort
 ```{r}
 # Subset samples for maneagbility - Take a random (sub)sample from each VL
 
-subSamp1perVL <- T2006_filt %>% group_by(VL) %>% slice_sample(n=1)
+subSamp1perVL <- JoinedDat %>% group_by(VL) %>% slice_sample(n=1)
 length(unique(subSamp1perVL$VL))
 
-plot(subSamp1perVL$X.y, subSamp1perVL$Y)
+plot(subSamp1perVL$X, subSamp1perVL$Y)
 ```
 
 
@@ -99,8 +53,8 @@ Afot1pVL_env_sort<-subSamp1perVL %>% select(c(2,(which(colnames(subSamp1perVL)==
 
 write the subsample to csv with sys.Date appended to keep track of which is the active sample that day
 ```{r}
-write.csv(Afot1pVL_otu_sort, file=file.path(dataPath,(paste0("inputsMS/Afot1pVL_otu_sort_", Sys.Date(),".csv"))))
-write.csv(Afot1pVL_env_sort, file=file.path(dataPath,(paste0("inputsMS/Afot1pVL_env_sort_", Sys.Date(),".csv"))))
+write.csv(Afot1pVL_otu_sort, file=file.path(dataPath,(paste0("inputsMS/otu_1pVL_MS_", Sys.Date(),".csv"))))
+write.csv(Afot1pVL_env_sort, file=file.path(dataPath,(paste0("inputsMS/env_1pVL_MS_", Sys.Date(),".csv"))))
 ```
 
 
